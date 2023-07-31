@@ -8,7 +8,7 @@ import (
 )
 
 func (conf *Configuration) dockerize() {
-	_ = writeToFile("./Config/default.yml", conf.defaultConfig(), yaml.Marshal)
+	_ = writeToFile("./config/default.yml", conf.defaultConfig(), yaml.Marshal)
 	_ = writeToFile("./Dockerfile", conf.dockerfile(), func(v interface{}) ([]byte, error) {
 		return v.([]byte), nil
 	})
