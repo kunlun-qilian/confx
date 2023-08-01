@@ -10,6 +10,12 @@ type DockerConfig struct {
 	BuildImage   string
 	RuntimeImage string
 	GoProxy      GoProxyConfig
+	Openapi      bool
+}
+
+type OpenapiConfig struct {
+	HasOpenapi bool
+	Path       string
 }
 
 type GoProxyConfig struct {
@@ -58,17 +64,20 @@ RUN make build WORKSPACE=`+c.WorkSpace())
 		`
 # runtime
 FROM %s`, c.dockerConfig.RuntimeImage))
-
 	_, _ = fmt.Fprintln(dockerfile, `
 COPY --from=builder `+filepath.Join("/go/src/cmd", c.WorkSpace(), c.WorkSpace())+` `+filepath.Join(`/go/bin`, c.Command.Use)+`
 `)
+	if c.dockerConfig.Openapi {
+		_, _ = fmt.Fprintf(dockerfile,
+			`COPY --from=builder %s %s
+		`, filepath.Join("/go/src/cmd", c.WorkSpace(), "openapi.json"), filepath.Join("/go/bin", "openapi.json"))
+	}
+
 	for _, envVar := range c.defaultEnvVars.Values {
 		if envVar.Value != "" {
-			if envVar.IsCopy {
-				_, _ = fmt.Fprintf(dockerfile, "COPY --from=builder %s %s\n", filepath.Join("/go/src/cmd", c.WorkSpace(), envVar.Value), filepath.Join("/go/bin", envVar.Value))
-			}
 			if envVar.IsExpose {
-				_, _ = fmt.Fprintf(dockerfile, "EXPOSE %s\n", envVar.Value)
+				_, _ = fmt.Fprintln(dockerfile, `
+EXPOSE`, envVar.Value)
 			}
 		}
 	}

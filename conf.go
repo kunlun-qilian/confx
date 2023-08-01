@@ -2,7 +2,6 @@ package confx
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -134,7 +133,7 @@ func (conf *Configuration) log(c interface{}) {
 }
 
 func (conf *Configuration) mayMarshalFromLocal(c interface{}) {
-	contents, err := ioutil.ReadFile(filepath.Join(conf.projectRoot, "./Config/local.yml"))
+	contents, err := os.ReadFile(filepath.Join(conf.projectRoot, "./config/local.yml"))
 	if err != nil {
 		return
 	}
