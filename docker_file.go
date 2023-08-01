@@ -13,11 +13,6 @@ type DockerConfig struct {
 	Openapi      bool
 }
 
-type OpenapiConfig struct {
-	HasOpenapi bool
-	Path       string
-}
-
 type GoProxyConfig struct {
 	ProxyOn bool
 	Host    string
