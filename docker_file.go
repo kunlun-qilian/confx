@@ -20,10 +20,10 @@ type GoProxyConfig struct {
 
 func (c *DockerConfig) setDefaults() {
 	if c.BuildImage == "" {
-		c.BuildImage = "dockerproxy.com/library/golang:1.20-buster"
+		c.BuildImage = "golang:1.20-buster"
 	}
 	if c.RuntimeImage == "" {
-		c.RuntimeImage = "gcr.dockerproxy.com/distroless/static-debian11"
+		c.RuntimeImage = "alpine"
 	}
 	if c.GoProxy.ProxyOn {
 		if c.GoProxy.Host == "" {
