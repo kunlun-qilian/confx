@@ -60,12 +60,21 @@ RUN make build WORKSPACE=`+c.WorkSpace())
 # runtime
 FROM %s`, c.dockerConfig.RuntimeImage))
 	_, _ = fmt.Fprintln(dockerfile, `
-COPY --from=builder `+filepath.Join("/go/src/cmd", c.WorkSpace(), c.WorkSpace())+` `+filepath.Join(`/go/bin`, c.Command.Use)+`
+COPY --from=builder `+ShouldReplacePath(filepath.Join("/go/src/cmd", c.WorkSpace(), c.WorkSpace()))+` `+ShouldReplacePath(filepath.Join(`/go/bin`, c.Command.Use))+`
 `)
 	if c.dockerConfig.Openapi {
-		_, _ = fmt.Fprintf(dockerfile,
-			`COPY --from=builder %s %s
-		`, filepath.Join("/go/src/cmd", c.WorkSpace(), "openapi.json"), filepath.Join("/go/bin", "openapi.json"))
+		// openapi 3.0
+		_, _ = fmt.Fprintln(dockerfile,
+			`
+# openapi 3.0
+COPY --from=builder `+
+				ShouldReplacePath(filepath.Join("/go/src/cmd", c.WorkSpace(), "openapi.json"))+` `+ShouldReplacePath(filepath.Join("/go/bin", "openapi.json")))
+		// gin swagger
+		_, _ = fmt.Fprintln(dockerfile,
+			`
+# gin swagger 2.0
+COPY --from=builder `+
+				ShouldReplacePath(filepath.Join("/go/src/cmd", c.WorkSpace(), "docs"))+` `+ShouldReplacePath(filepath.Join("/go/bin", "docs")))
 	}
 
 	for _, envVar := range c.defaultEnvVars.Values {
@@ -83,7 +92,7 @@ ARG PROJECT_VERSION
 ENV PROJECT_NAME=${PROJECT_NAME} PROJECT_VERSION=${PROJECT_VERSION}
 
 WORKDIR /go/bin
-ENTRYPOINT ["`+filepath.Join(`/go/bin`, c.Command.Use)+`"]
+ENTRYPOINT ["`+ShouldReplacePath(filepath.Join(`/go/bin`, c.Command.Use))+`"]
 `)
 
 	return dockerfile.Bytes()

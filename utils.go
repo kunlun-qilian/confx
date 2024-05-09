@@ -1,5 +1,10 @@
 package confx
 
+import (
+	"runtime"
+	"strings"
+)
+
 type Password string
 
 func (p Password) String() string {
@@ -12,4 +17,11 @@ func (p Password) SecurityString() string {
 		r = append(r, []rune("-")...)
 	}
 	return string(r)
+}
+
+func ShouldReplacePath(s string) string {
+	if runtime.GOOS != "windows" {
+		return s
+	}
+	return strings.ReplaceAll(s, `\`, `/`)
 }

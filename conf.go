@@ -78,7 +78,7 @@ func (conf *Configuration) ProjectName() string {
 }
 
 func (conf *Configuration) WorkSpace() string {
-	paths := strings.Split(conf.projectRoot, "/")
+	paths := strings.Split(ShouldReplacePath(conf.projectRoot), "/")
 	return paths[len(paths)-1]
 }
 
