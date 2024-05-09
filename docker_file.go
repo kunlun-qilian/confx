@@ -7,15 +7,22 @@ import (
 )
 
 type DockerConfig struct {
-	BuildImage   string
-	RuntimeImage string
-	GoProxy      GoProxyConfig
-	Openapi      bool
+	BuildImage     string
+	RuntimeImage   string
+	GoConfig       GoConfig
+	Openapi        bool
+	GitlabCIConfig GitlabCIConfig
 }
 
-type GoProxyConfig struct {
-	ProxyOn bool
-	Host    string
+type GitlabCIConfig struct {
+	GitlabCI   bool
+	GitlabHost string
+}
+
+type GoConfig struct {
+	ProxyOn     bool
+	ProxyHost   string
+	PrivateHost string
 }
 
 func (c *DockerConfig) setDefaults() {
@@ -25,11 +32,6 @@ func (c *DockerConfig) setDefaults() {
 	if c.RuntimeImage == "" {
 		c.RuntimeImage = "alpine"
 	}
-	if c.GoProxy.ProxyOn {
-		if c.GoProxy.Host == "" {
-			c.GoProxy.Host = "https://goproxy.cn,direct"
-		}
-	}
 }
 
 func (c *Configuration) dockerfile() []byte {
@@ -37,15 +39,40 @@ func (c *Configuration) dockerfile() []byte {
 	dockerfile := bytes.NewBuffer(nil)
 	// builder
 	_, _ = fmt.Fprintf(dockerfile, "FROM %s AS build-env\n", c.dockerConfig.BuildImage)
-
+	// go proxy
+	if c.dockerConfig.GoConfig.ProxyOn {
+		if c.dockerConfig.GoConfig.ProxyHost == "" {
+			_, _ = fmt.Fprintln(dockerfile, `
+ARG GOPROXY`)
+		} else {
+			_, _ = fmt.Fprintln(dockerfile, fmt.Sprintf(`
+ARG GOPROXY=%s`, c.dockerConfig.GoConfig.ProxyHost))
+		}
+		if c.dockerConfig.GoConfig.PrivateHost == "" {
+			_, _ = fmt.Fprintln(dockerfile, `
+ARG GOPRIVATE`)
+		} else {
+			_, _ = fmt.Fprintln(dockerfile, fmt.Sprintf(`
+ARG GOPRIVATE=%s`, c.dockerConfig.GoConfig.PrivateHost))
+		}
+	}
+	// gitlab
+	if c.dockerConfig.GitlabCIConfig.GitlabCI {
+		_, _ = fmt.Fprintln(dockerfile, `
+ARG GITLAB_CI_TOKEN`)
+		if c.dockerConfig.GitlabCIConfig.GitlabHost == "" {
+			panic("GitlabHost is nil")
+		}
+		_, _ = fmt.Fprintln(dockerfile, fmt.Sprintf(`
+ARG GITLAB_HOST=%s`, c.dockerConfig.GitlabCIConfig.GitlabHost))
+		_, _ = fmt.Fprintln(dockerfile, `
+ENV GONOSUMDB=${GITLAB_HOST}/*`)
+		_, _ = fmt.Fprintln(dockerfile, `
+RUN git config --global url.https://gitlab-ci-token:${GITLAB_CI_TOKEN}@${GITLAB_HOST}/.insteadOf https://${GITLAB_HOST}/`)
+	}
 	_, _ = fmt.Fprintln(dockerfile, `
 FROM build-env AS builder
 `)
-	// go proxy
-	if c.dockerConfig.GoProxy.ProxyOn {
-		_, _ = fmt.Fprintln(dockerfile, fmt.Sprintf(`
-ARG GOPROXY=%s`, c.dockerConfig.GoProxy.Host))
-	}
 
 	_, _ = fmt.Fprintln(dockerfile, `
 WORKDIR /go/src
